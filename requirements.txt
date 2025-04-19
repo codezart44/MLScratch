@@ -1,8 +1,10 @@
 numpy
-pandas
 matplotlib
 seaborn
-scipy
 
 ipykernel
 jupyter
+
+
+# Make small site displaying model and gifs of parameters being adjusted (trained)
+# streamlit ? 
