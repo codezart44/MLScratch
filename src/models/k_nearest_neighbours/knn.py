@@ -3,14 +3,10 @@ import numpy as np
 from typing import Literal
 from collections import Counter
 
-'''
-Algorithm:
-fit: save train datapoints as reference
-predict: Majority vote of k nearest (euclidean distance) train points
-'''
-
+# Algorithm:
+# fit: save train datapoints as reference
+# predict: Majority vote of k nearest (euclidean distance) train points
 # NOTE FIXME - add tiebreaker when voting is tied for multiple labels
-
 
 class KNearestNeighbors():
     def __init__(self, k:int=5) -> None:
@@ -42,14 +38,3 @@ class KNearestNeighbors():
         # prediction = Counter(k_nearest).most_common()[0][0]                 # majority vote
 
         return prediction
-
-    
-
-
-
-## deprecated
-
-def euclidean_distance(p1:np.ndarray, p2:np.ndarray):
-    '''Calculate the Euclidean distance between two points p1 & p2.'''
-    distance = np.sqrt(np.square(p2-p1).sum())
-    return distance

@@ -1,6 +1,8 @@
 import numpy as np
 from typing import Literal
 
+# --------------------- HELPER FUNCTIONS REGRESSION ---------------------
+
 def mean_squared_error(targets: np.ndarray) -> float:
     """
     Compute the mean squared error (MSE) of the targets.
@@ -79,7 +81,6 @@ def mse_reduction(targets: np.ndarray, splits: tuple[np.ndarray, np.ndarray]) ->
         reduction -= w_i * mean_squared_error(split_i)
     return reduction
 
-
 def mae_reduction(targets: np.ndarray, splits: tuple[np.ndarray, np.ndarray]) -> float:
     """
     ...
@@ -89,3 +90,36 @@ def mae_reduction(targets: np.ndarray, splits: tuple[np.ndarray, np.ndarray]) ->
         w_i = split_i.size / targets.size
         reduction -= w_i * mean_absolute_error(split_i)
     return reduction
+
+# --------------------- INPUT VALIDATION ---------------------
+
+# def validate_targets(f):  # NOTE Maybe Bundle this with the labels
+#     """..."""
+#     def wrapper(*args, **kwargs):
+#         targets: np.ndarray = kwargs.get('targets') if 'targets' in kwargs else args[0]
+#         assert isinstance(targets, np.ndarray), 'Error: targets is of non array type. '
+#         assert targets.shape[0] > 0, 'Error: targets cannot be empty. '
+#         assert targets.ndim == 1, 'Error: Array must be one-dimensional'
+#         return f(*args, **kwargs)
+#     return wrapper
+
+# def validate_splits(f):
+#     def wrapper(*args, **kwargs):
+#         ...
+#         return f(*args, **kwargs)
+#     return wrapper
+
+# @validate_targets
+# @validate_splits
+
+def criterion_score_regressor(
+        targets : np.ndarray,
+        splits : tuple[np.ndarray, np.ndarray],
+        criterion : Literal['mse', 'mae'] = 'mse',
+        ) -> float:
+    """..."""
+    if criterion == 'mse':
+        return mse_reduction(targets, splits)
+    if criterion == 'mae':
+        return mae_reduction(targets, splits)
+    
