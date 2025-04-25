@@ -4,17 +4,17 @@ from abc import ABC, abstractmethod
 
 # --------------------- BASE CLASSES ---------------------
 
-class NodeMeta(NamedTuple):
+class BinaryTreeNodeMeta(NamedTuple):
     """
     ...
     """
-    child_l : 'DecisionTreeNode'
-    child_r : 'DecisionTreeNode'
+    child_l : 'BinaryTreeNode'
+    child_r : 'BinaryTreeNode'
     feature : int
     threshold : int | float
 
 
-class DecisionTreeNode(ABC):
+class BinaryTreeNode(ABC):
     """
     ...
     """
@@ -28,8 +28,8 @@ class DecisionTreeNode(ABC):
         self.depth = depth
         self.feature = feature  # index of feature
         self.threshold = threshold  # feature threshold where split is made
-        self.child_l : DecisionTreeNode | None = None
-        self.child_r : DecisionTreeNode | None = None
+        self.child_l : BinaryTreeNode | None = None
+        self.child_r : BinaryTreeNode | None = None
 
     def __str__(self) -> str:
         indicies_print = str(self.indicies[:5])[:-1] + '...' + str(self.indicies[-5:])[1:] \
@@ -40,22 +40,22 @@ class DecisionTreeNode(ABC):
             return f'N{self.depth}: indicies {indicies_print}, feature {self.feature}, threshold {self.threshold}'
 
     def add_children(self, 
-            left : 'DecisionTreeNode | None' = None, 
-            right : 'DecisionTreeNode | None' = None
+            left : 'BinaryTreeNode | None' = None, 
+            right : 'BinaryTreeNode | None' = None
         ) -> None:
         """
         Set the children of a decision node.
 
-        The children are only updated if the input is of type `DecisionTreeNode`.
+        The children are only updated if the input is of type `BinaryTreeNode`.
         Inputting None will not result in the current child being set to None but is there
         to allow one child being set at a time. The children, however, can either be leaf nodes, decision
         nodes or a mix of the two. 
 
         Parameters
         ----------
-        left : DecisionTreeNode, default = None
+        left : BinaryTreeNode, default = None
             The left child of the decision node.
-        right : DecisionTreeNode, default = None
+        right : BinaryTreeNode, default = None
             The right child of the decision node.
 
         Returns
@@ -65,15 +65,15 @@ class DecisionTreeNode(ABC):
 
         Exampels
         --------
-        >>> node = DecisionTreeNode(...)  # must be decision node
-        >>> left = DecisionTreeNode(...)  # either decision or leaf node
-        >>> right = DecisionTreeNode(...)  # either decision or leaf node
+        >>> node = BinaryTreeNode(...)  # must be decision node
+        >>> left = BinaryTreeNode(...)  # either decision or leaf node
+        >>> right = BinaryTreeNode(...)  # either decision or leaf node
         >>> node.add_children(left, right)  # Here both are added at the same time
         None
         """
-        if isinstance(left, DecisionTreeNode):
+        if isinstance(left, BinaryTreeNode):
             self.child_l = left
-        if isinstance(right, DecisionTreeNode):
+        if isinstance(right, BinaryTreeNode):
             self.child_r = right
     
     @property
@@ -90,11 +90,11 @@ class DecisionTreeNode(ABC):
         return self.child_l is None and self.child_r is None
 
     @abstractmethod
-    def make_leaf(self) -> NodeMeta:
+    def make_leaf(self) -> BinaryTreeNodeMeta:
         pass
 
     @abstractmethod
-    def revert_leaf(self, node_meta: NodeMeta) -> None:
+    def revert_leaf(self, node_meta: BinaryTreeNodeMeta) -> None:
         pass
 
 
@@ -106,25 +106,25 @@ class BinaryTree:
 
     Parameters
     ----------
-    root : DecisionTreeNode
+    root : BinaryTreeNode
 
     Properties
     ----------
     depth : int
         The maximum depth between the root node and most descendent leaf node.
-    decision_nodes : list[DecisionTreeNode]
+    decision_nodes : list[BinaryTreeNode]
         A list of all decision nodes in the tree. These are the internal
         nodes used to split the data.
-    leaf_nodes : list[DecisionTreeNode]
+    leaf_nodes : list[BinaryTreeNode]
         A list of all leaf nodes in the the tree. These are the terminal
         nodes used to classify datapoints. 
 
     Examples
     --------
-    >>> root = DecisionTreeNode(...)
+    >>> root = BinaryTreeNode(...)
     >>> tree = BinaryTree(root)
     """
-    def __init__(self, root : DecisionTreeNode):
+    def __init__(self, root : BinaryTreeNode):
         self.root = root
 
     def __str__(self) -> str:
@@ -148,7 +148,7 @@ class BinaryTree:
         nodes = self.ravel_dfs() if order == 'dfs' else self.ravel_bfs()
         return '\n'.join([f'{" |  "*node.depth}{node.__str__()}' for node in nodes])
     
-    def ravel_dfs(self) -> list[DecisionTreeNode]:
+    def ravel_dfs(self) -> list[BinaryTreeNode]:
         """
         Ravel the tree into a list of nodes through a depth first search (DFS).
         DFS inserts the children of the current node to the top of a stack, resulting 
@@ -156,20 +156,20 @@ class BinaryTree:
 
         Returns
         -------
-        list[DecisionTreeNodes]
+        list[BinaryTreeNodes]
             A list of the tree nodes ordered by a DFS.
         """
         nodes = []
         stack = [self.root]
         while stack:
-            node : DecisionTreeNode = stack.pop(0)
+            node : BinaryTreeNode = stack.pop(0)
             nodes.append(node)
             if not node.is_leaf:
                 stack.insert(0, node.child_r)
                 stack.insert(0, node.child_l)  # Keep left most on top
         return nodes
 
-    def ravel_bfs(self) -> list[DecisionTreeNode]:
+    def ravel_bfs(self) -> list[BinaryTreeNode]:
         """
         Flatten the tree into a list of nodes through a breadth first search (BFS). 
         BFS appends the children of a node to the back of a queue, resulting in the
@@ -177,13 +177,13 @@ class BinaryTree:
 
         Returns
         -------
-        list[DecisionTreeNode]
+        list[BinaryTreeNode]
             A list of the tree nodes ordered by a BFS.
         """
         nodes = []
         queue = [self.root]
         while queue:
-            node : DecisionTreeNode = queue.pop(0)
+            node : BinaryTreeNode = queue.pop(0)
             nodes.append(node)
             if not node.is_leaf:
                 queue.append(node.child_l)
@@ -205,7 +205,7 @@ class BinaryTree:
         return max(self.ravel_dfs(), key=lambda node: node.depth).depth
 
     @property
-    def decision_nodes(self) -> list[DecisionTreeNode]:
+    def split_nodes(self) -> list[BinaryTreeNode]:
         """
         A list containing all decision nodes (no leaves) of a trained
         Decision Tree. This assumes that `fit()` has been called beforehand, 
@@ -213,13 +213,13 @@ class BinaryTree:
         
         Returns
         -------
-        list[DecisionTreeNode]
+        list[BinaryTreeNode]
             A list of all decision nodes in the tree.
         """
         return [node for node in self.ravel_dfs() if not node.is_leaf]
     
     @property
-    def leaf_nodes(self) -> list[DecisionTreeNode]:
+    def leaf_nodes(self) -> list[BinaryTreeNode]:
         """
         A list containing all leaf nodes of a trained Decision Tree. 
         This assumes that `fit()` has been called beforehand, since no tree 
@@ -227,13 +227,13 @@ class BinaryTree:
 
         Returns
         -------
-        list[DecisionTreeNode]
+        list[BinaryTreeNode]
             A list of all leaf nodes in the tree.
         """
         return [node for node in self.ravel_dfs() if node.is_leaf]
     
-    
-class DecisionTree(ABC):
+
+class DecisionTreeModel(ABC):
     def __init__(
             self,
             # criterion : Literal['mse', 'mae'] = 'mse',
@@ -286,7 +286,7 @@ class DecisionTree(ABC):
         """
         ...
         """
-        return len(self._tree.decision_nodes)
+        return len(self._tree.split_nodes)
     
     @property
     def n_leaves(self) -> int:
@@ -294,7 +294,6 @@ class DecisionTree(ABC):
         ...
         """
         return len(self._tree.leaf_nodes)
-
     
     @abstractmethod
     def fit(self, X:np.ndarray, y:np.ndarray) -> None:

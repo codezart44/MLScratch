@@ -1,10 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from DecisionTrees.models.utils import *
-from DecisionTrees.models.base import *
+from typing import Literal
+
+from ._base import (
+    BinaryTreeNodeMeta,
+    BinaryTreeNode,
+    BinaryTree,
+    DecisionTreeModel,
+)
+from ...utils.split_critera import criterion_score_classifier
+from ...utils.metrics import accuracy_score
 
 
-class ClassifierNode(DecisionTreeNode):
+class DecisionTreeClassifierNode(BinaryTreeNode):
     """
     ...
 
@@ -56,7 +64,7 @@ class ClassifierNode(DecisionTreeNode):
             self.label = None
             self.probs = None
 
-    def make_leaf(self) -> dict:
+    def make_leaf(self) -> BinaryTreeNodeMeta:
         """
         asdasd
 
@@ -67,15 +75,15 @@ class ClassifierNode(DecisionTreeNode):
         dict
             ...
         """
-        assert self.child_l.is_leaf and self.child_r.is_leaf, 'Both children must be leaves. '
-        assert not self.is_leaf, 'Cannot turn an alreay leaf into a leaf. '
-        self.child_l : ClassifierNode
-        self.child_r : ClassifierNode
+        assert self.child_l.is_leaf and self.child_r.is_leaf, 'Error: Both children must be leaves. '
+        assert not self.is_leaf, 'Error: Node is already a leaf. '
+        self.child_l : DecisionTreeClassifierNode
+        self.child_r : DecisionTreeClassifierNode
         self.labels = np.r_[self.child_l.labels, self.child_r.labels]  # take childern labels
         unique, counts = np.unique(self.labels, return_counts=True)
         self.label = unique[np.argmax(counts)]  # takes first instance if shared for max
         self.probs = counts / np.sum(counts)
-        node_meta = NodeMeta(
+        node_meta = BinaryTreeNodeMeta(
             child_l=self.child_l,
             child_r=self.child_r,
             feature=self.feature,
@@ -87,7 +95,7 @@ class ClassifierNode(DecisionTreeNode):
         self.threshold = None
         return node_meta
 
-    def revert_leaf(self, node_meta: NodeMeta) -> None:
+    def revert_leaf(self, node_meta: BinaryTreeNodeMeta) -> None:
         """
         asdad
 
@@ -104,7 +112,7 @@ class ClassifierNode(DecisionTreeNode):
             ...
         
         """
-        assert self.is_leaf, 'Only leaf can be converted to node. '
+        assert self.is_leaf, 'Error: Node is already a leaf. '
         self.labels = None
         self.label = None
         self.probs = None
@@ -114,13 +122,10 @@ class ClassifierNode(DecisionTreeNode):
         self.threshold = node_meta.threshold
 
 
-
-
-
 # Attributes (features) are assumed to be:
 #   * Info: Categorical
 #   * Gini: Continuous
-class DecisionTreeClassifier(DecisionTree):
+class DecisionTreeClassifier(DecisionTreeModel):
     """
     Decision trees for classification.
 
@@ -184,9 +189,9 @@ class DecisionTreeClassifier(DecisionTree):
             random_state : int = None,
         ):
         super().__init__(max_depth, min_samples_leaf, max_features, min_impurity_decrease, random_state)
-        
         self.criterion = criterion
         self.n_classes = None
+        
         
     def fit(self, X:np.ndarray, y:np.ndarray) -> None:
         """
@@ -233,13 +238,13 @@ class DecisionTreeClassifier(DecisionTree):
 
         feature, threshold = self._search_split(X, y)
         indicies = np.arange(0, n_samples)
-        root = ClassifierNode(indicies=indicies, feature=feature, threshold=threshold, depth=0)  # depth 0
+        root = DecisionTreeClassifierNode(indicies=indicies, feature=feature, threshold=threshold, depth=0)  # depth 0
         self._tree = BinaryTree(root)
         queue = [self._tree.root]
 
         # perform splits until perfectly separated classes or stop before min_samples_leaf is reached
         while queue:
-            node: ClassifierNode = queue.pop(0)
+            node: DecisionTreeClassifierNode = queue.pop(0)
 
             feature_values = X[node.indicies, node.feature]
             split_mask = feature_values < node.threshold
@@ -256,7 +261,7 @@ class DecisionTreeClassifier(DecisionTree):
                 feature1 = threshold1 = None  # Will cause splits to become leafs
                 feature2 = threshold2 = None
 
-            node1 = ClassifierNode(
+            node1 = DecisionTreeClassifierNode(
                 indicies=split_indicies1,
                 depth=node.depth+1,
                 feature=feature1,       # None for leaf
@@ -266,7 +271,7 @@ class DecisionTreeClassifier(DecisionTree):
             if feature1 is not None:    # found split, add Node
                 queue.append(node1)
 
-            node2 = ClassifierNode(
+            node2 = DecisionTreeClassifierNode(
                 indicies=split_indicies2,
                 depth=node.depth+1,
                 feature=feature2,       # None for leaf
@@ -325,7 +330,7 @@ class DecisionTreeClassifier(DecisionTree):
         predictions = -np.ones(n_samples, dtype=int)  # minus ones as non predictions
 
         for i in range(n_samples):
-            node: ClassifierNode = self._tree.root
+            node: DecisionTreeClassifierNode = self._tree.root
             x = X[i]
             while not node.is_leaf:
                 node = node.child_l if x[node.feature] < node.threshold else node.child_r
@@ -400,7 +405,7 @@ class DecisionTreeClassifier(DecisionTree):
             stack.append(self._tree.root)
 
             while stack:
-                node: ClassifierNode = stack.pop(0)
+                node: DecisionTreeClassifierNode = stack.pop(0)
                 
                 # Only prune if both children are leaves
                 if node.child_l.is_leaf and node.child_r.is_leaf:
@@ -499,7 +504,7 @@ class DecisionTreeClassifier(DecisionTree):
                 if len(y1) < self.min_samples_leaf or len(y2) < self.min_samples_leaf:
                     continue
                 
-                split_score = criterion_score(labels=y, splits=(y1, y2), criterion=self.criterion)
+                split_score = criterion_score_classifier(labels=y, splits=(y1, y2), criterion=self.criterion)
                 if split_score > best_score:
                     best_score = split_score
                     split_feature = i
@@ -509,9 +514,10 @@ class DecisionTreeClassifier(DecisionTree):
     
 
 
-
-
-
+# FIXME Make general function to plot both 
+# - DecisionTreeClassifier splits
+# - DecisionTreeRegressor splits
+# NOTE Similar logic for both, can plot points for both types of models.
 def plot_splits(
         model : DecisionTreeClassifier,
         X_train : np.ndarray,
@@ -589,8 +595,8 @@ def plot_splits(
     vlines = [(xmin, ymin, ymax), (xmax, ymin, ymax)]  #   vertical lines (x, y1, y2)
     hlines = [(ymin, xmin, xmax), (ymax, xmin, xmax)]  # horizontal lines (y, x1, x2)
 
-    for node in model._tree.decision_nodes:
-        node: ClassifierNode
+    for node in model._tree.split_nodes:
+        node: DecisionTreeClassifierNode
         y_subset:np.ndarray = X_train[node.indicies, feature_y]
         x_subset:np.ndarray = X_train[node.indicies, feature_x]
 

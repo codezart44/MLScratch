@@ -1,2 +1,7 @@
-from .dt_classifier import DecisionTreeClassifier
-from .dt_regressor import DecisionTreeRegressor
+from ._classifier import (
+    DecisionTreeClassifier,
+    plot_splits,
+    )
+from ._regressor import (
+    DecisionTreeRegressor,
+    )
