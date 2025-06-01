@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def mse_score(
         y_true : np.ndarray,
         y_pred : np.ndarray,
@@ -44,7 +45,8 @@ def mse_score(
     35.957899999999995
     """
     mse = np.mean(np.square(y_true - y_pred))
-    return mse if not root else np.sqrt(mse)
+    return np.sqrt(mse) if root else mse
+
 
 def mae_score(
     y_true : np.ndarray,

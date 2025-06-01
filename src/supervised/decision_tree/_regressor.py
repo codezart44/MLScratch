@@ -8,14 +8,27 @@ from .base import (
     BinaryTree,
     DecisionTreeModel,
 )
-from ...utils.split_critera import criterion_score_regressor
+from ...utils.math import mse_reduction, mae_reduction
 from ...utils.metrics import mse_score, mae_score
-from ...utils.probability import get_gaussian_pdf
+from ...utils.math import get_gaussian_pdf
 
 # --------------------- DECISION TREE REGRESSOR CLASSES ---------------------
 # - DecisionTreeRegressorNode  (BinaryTreeNode)
 # - DecisionTreeRegressor      (DecisionTreeModel)
 
+def criterion_score_regressor(
+        targets : np.ndarray,
+        splits : tuple[np.ndarray, np.ndarray],
+        criterion : Literal['mse', 'mae'] = 'mse',
+        ) -> float:
+    """
+    ...
+    """
+    if criterion == 'mse':
+        return mse_reduction(targets, splits)
+    if criterion == 'mae':
+        return mae_reduction(targets, splits)
+    
 
 class DecisionTreeRegressorNode(BinaryTreeNode):
     """

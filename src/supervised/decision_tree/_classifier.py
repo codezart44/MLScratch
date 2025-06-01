@@ -7,7 +7,8 @@ from .base import (
     BinaryTree,
     DecisionTreeModel,
 )
-from ...utils.split_critera import criterion_score_classifier
+
+from ...utils.math import info_gain, gini_gain
 from ...utils.metrics import accuracy_score
 
 
@@ -15,6 +16,40 @@ from ...utils.metrics import accuracy_score
 # - DecisionTreeClassifierNode  (BinaryTreeNode)
 # - DecisionTreeClassifier      (DecisionTreeModel)
 
+
+def criterion_score_classifier(
+    labels : np.ndarray, 
+    splits : tuple[np.ndarray, np.ndarray], 
+    criterion : Literal['info','gini'] = 'info'
+    ) -> float:
+    """ ### Compute Criterion Score
+
+    Top level API for criterion score selection.
+
+    See specific criterion functions for details regarding how each score is computed.
+    See `info_gain()` for info criterion and `gini_gain()` for gini criterion.
+    This function is meant to be the top level api used in DecisionTreeClassifier class. 
+
+    Params
+    ------
+    labels : ndarray
+        An array of original dataset labels. 
+    splits : tuple[ndarray, ndarray]
+        A tuple of arrays the original dataset was split into.
+    criterion : {'info', 'gini'}, default = 'info'
+        The criterion to use for the gain from performing the split.
+        - 'info' : Information Gain (Entropy reduction)
+        - 'gini' : Gini Gain (Impurity reduction)
+
+    Returns
+    -------
+    float
+        Impurity Reduction by performing split.
+    """
+    if criterion == 'info':
+        return info_gain(labels=labels, splits=splits)
+    if criterion == 'gini':
+        return gini_gain(labels=labels, splits=splits)
 
 class DecisionTreeClassifierNode(BinaryTreeNode):
     """
