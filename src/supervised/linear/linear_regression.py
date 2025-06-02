@@ -49,12 +49,15 @@ class LinearRegression(LinearModel):
 
     def fit_ols(self, X: np.ndarray, y: np.ndarray) -> None:
         """
-        ...
+        Ordinary Least Squares Linear Regression implementaion.
+
+        X is the design matrix, B the coefficient vector and y the obervation
+        vector.
+
+        >>> XB = y
+        >>> X^T @ XB = X^T @ y
+        >>> B = (X^T @ X)^-1 @ X^T y  # !not solvable for singular matrix, IMT
         """ 
-        # OLD Linear Regression implementaion
-        # XB = y
-        # X^T @ XB = X^T @ y
-        # B = (X^T @ X)^-1 @ X^T y  !not solvable for singular matrix, IMT
         n_samples = X.shape[0]
         ones = np.ones(n_samples).reshape(-1, 1)
         X = np.c_[ones, X]  # prepend ones for intercept

@@ -1,30 +1,23 @@
-
 import numpy as np
+from typing import Literal
 
+from .base import LogisticModel...
 
 
 class LogisticRegression:
 
     def __init__(self) -> None:
-        ''''''
+        """
+        ...
+        """
         self.b = None
         self.w = None
     
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
-        '''
-        L = p^y * (1-p)^(1-y)
-
-        LL = y*log(p) + (1-y)log(1-p)
-
-                     m
-        df/db = -1/m*∑((yi-1) + e^-(w*xi+b)/(1+e^-(w*xi+b)))
-                    i=1
-
-                     m
-        df/dw = -1/m*∑xi((yi-1) + e^-(w*xi+b)/(1+e^-(w*xi+b)))
-                    i=1
-        '''
+        """
+        ...
+        """
         m_samples, n_features = X.shape
 
         alpha = 0.01
@@ -46,9 +39,26 @@ class LogisticRegression:
 
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        ''''''
+        """
+        ...
+        """
         z = X @ self.w + self.b
         return 1/(1+np.e**(-z))
 
 
 
+"""
+```
+L = p^y * (1-p)^(1-y)
+
+LL = y*log(p) + (1-y)log(1-p)
+
+                m
+df/db = -1/m*∑((yi-1) + e^-(w*xi+b)/(1+e^-(w*xi+b)))
+            i=1
+
+                m
+df/dw = -1/m*∑xi((yi-1) + e^-(w*xi+b)/(1+e^-(w*xi+b)))
+            i=1
+```
+"""

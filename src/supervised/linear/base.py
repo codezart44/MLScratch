@@ -1,8 +1,7 @@
 import numpy as np
 from typing import Literal
-from ...utils.math.regulationsation import l1_norm, l2_norm
+from ...utils.math.regularisation import l1_norm, l2_norm
 from abc import ABC, abstractmethod
-
 
 from ...utils.data import shuffle_data, split_data
 from ...utils.metrics.regression import mse_score
@@ -10,8 +9,8 @@ from ...utils.validation import EarlyStopper
 
 
 # --------------------- DECISION TREE CLASSIFIER CLASSES ---------------------
-# LinearModel   (ABC)
-
+# LinearModel       (ABC)
+# LogisticModel     (ABC)
 
 class LinearModel(ABC):
     def __init__(
@@ -25,6 +24,7 @@ class LinearModel(ABC):
             train_val_split : float = 0.2,
             verbose : bool = True,
             ) -> None:
+        super().__init__()
         # Parameters
         self.learning_rate = learning_rate
         self.epochs = epochs
@@ -125,7 +125,7 @@ class LinearModel(ABC):
             Loss score between predicted and true targets. 
         """
         y_pred = self.predict(X)
-        loss = mse_score(y, y_pred)
+        loss = self.compute_loss(y, y_pred)
         return loss
 
     def gradient_descent(self, X: np.ndarray, y: np.ndarray) -> float:
@@ -221,6 +221,12 @@ class LinearModel(ABC):
         return self.__intercept
 
 
+class LogisticModel(ABC):
+    def __init__(
+            self,
+            
+            ):
+        super().__init__()
 
 # --------------------- LINEAR MODEL HELPER FUNCTIONS ---------------------
 
@@ -286,39 +292,3 @@ def elastic_net(
 
 
 
-
-
-
-# def penalty_term(
-#         coefficients : np.ndarray,
-#         pentaly : Literal['lasso', 'ridge', 'elasticnet'] = 'elasticnet', 
-#         l1_ratio : float = 0.5,
-#         ) -> float:
-#         """
-#         Top level API for linear model penalty term selection. 
-
-#         Parameters
-#         ----------
-#         coefficients : ndarray
-#             Weights of the model. Intercept (bias) should be excluded. 
-#         penalty : {'lasso', 'ridge', 'elasticnet'}, default='elasticnet'
-#             Type of regularisation to apply.
-#             - 'lasso' applies L1 penalty. (feature selection)
-#             - 'ridge' applies L2 penalty. (feature shrinkage)
-#             - 'elasticnet' applies a weighted combination of both L1 and L2 penalty. 
-#         l1_ratio : float
-#             Percentage of penalty to consist of l1 norm (LASSO) term. Remaining
-#             (1 - l1_ratio) is l2 norm (ridge). Expexted to be in range [0.0, 1.0].
-#             Ignored for both Lasso and Ridge. 
-
-#         Returns
-#         -------
-#         float
-#             The computed elastic net regularisation pentaly term.
-#         """
-#         if pentaly == 'lasso':
-#             return lasso(coefficients)
-#         if pentaly == 'ridge':
-#             return ridge(coefficients)
-#         if pentaly == 'elasticnet':
-#             return elastic_net(coefficients, l1_ratio)

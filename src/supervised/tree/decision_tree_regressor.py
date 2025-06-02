@@ -12,9 +12,11 @@ from ...utils.math import mse_reduction, mae_reduction
 from ...utils.metrics import mse_score, mae_score
 from ...utils.math import get_gaussian_pdf
 
+
 # --------------------- DECISION TREE REGRESSOR CLASSES ---------------------
 # - DecisionTreeRegressorNode  (BinaryTreeNode)
 # - DecisionTreeRegressor      (DecisionTreeModel)
+
 
 def criterion_score_regressor(
         targets : np.ndarray,
@@ -28,7 +30,7 @@ def criterion_score_regressor(
         return mse_reduction(targets, splits)
     if criterion == 'mae':
         return mae_reduction(targets, splits)
-    
+
 
 class DecisionTreeRegressorNode(BinaryTreeNode):
     """
