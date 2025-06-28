@@ -2,15 +2,15 @@ import numpy as np
 from typing import Literal
 
 from .base import LinearModel
-from ...utils.metrics.regression import mse_score, mae_score
 from .base import lasso, ridge, elastic_net
+from ...utils.math.activations import linear
+from ...utils.metrics.regression import mse_score, mae_score
 
 # --------------------- LINEAR REGRESSION MODELS ---------------------
-# - LinearRegression    (LinearModel)
-# - LASSO               (LinearModel)
-# - Ridge               (LinearModel)
-# - ElasticNet          (LinearModel)
-
+# - LinearRegression        (LinearModel)
+# - LinearLASSO             (LinearModel)
+# - LinearRidge             (LinearModel)
+# - LinearElasticNet        (LinearModel)
 
 class LinearRegression(LinearModel):
     def __init__(
@@ -25,27 +25,32 @@ class LinearRegression(LinearModel):
             verbose = True):
         super().__init__(learning_rate, epochs, batch_size, keep_rest, training_method, patience, train_val_split, verbose)
 
+        self._activation = linear
         self.n_features = None
 
-    def compute_loss(self, y_batch: np.ndarray, y_pred: np.ndarray) -> float:
+    def compute_loss(self, y_true, y_pred) -> float:
         """
         Includes no penalty in normal LinearRegression
         """
-        loss = mse_score(y_batch, y_pred) + self.alp
+        loss = mse_score(y_true, y_pred)
         return loss
 
-    def gradient_update(self, x_batch: np.ndarray, y_batch: np.ndarray, y_pred: np.ndarray) -> None:
+    def gradient_update(self, x, y_true, y_pred) -> None:
         """
         Includes no penalty in normal LinearRegression.
-        """
-        # dl/dw (y - (x*w + b))^2 = -2x(y - (x*w+b)) -> -2x * error
-        # dl/db (y - (x*w + b))^2 = -2(y - (x*w+b)) -> -2 * error
-        error = y_batch - y_pred  # y - y_hat
-        gradient_coefficients = -2 * x_batch.T @ error / x_batch.shape[0]
-        gradient_intercept = -2 * error.mean()
 
-        self.coefficients -= self.learning_rate * gradient_coefficients
-        self.intercept -= self.learning_rate * gradient_intercept
+        >>> loss(X, y) = 1/m sum((y - xw - b)^2)
+        >>> # Linear Regression partial differentials
+        >>> d/dw loss(w, b) = -2/m * x(y - xw - b)
+        >>> d/db loss(w, b) =   -2(y - xw - b) 
+        """
+        error = y_true - y_pred  # y - (xw + b)
+        m = x.shape[0]
+        gradient_w = -2 * x.T @ error / m
+        gradient_b = -2 * error.mean()
+
+        self.w -= self.learning_rate * gradient_w
+        self.b -= self.learning_rate * gradient_b
 
     def fit_ols(self, X: np.ndarray, y: np.ndarray) -> None:
         """
@@ -63,12 +68,12 @@ class LinearRegression(LinearModel):
         X = np.c_[ones, X]  # prepend ones for intercept
         parameters = np.linalg.inv(X.T @ X) @ (X.T @ y)
         parameters = parameters.ravel()
-        self.coefficients = parameters[1:]
-        self.intercept = parameters[0]
+        self.w = parameters[1:]
+        self.b = parameters[0]
 
 
 
-class LASSO(LinearModel):
+class LinearLASSO(LinearModel):
     def __init__(
             self,
             learning_rate = 0.01,
@@ -81,36 +86,38 @@ class LASSO(LinearModel):
             train_val_split = 0.2,
             verbose = True):
         super().__init__(learning_rate, epochs, batch_size, keep_rest, training_method, patience, train_val_split, verbose)
+        self._activation = linear
         self.alpha = alpha
         self.n_features = None
 
-    def compute_loss(self, y_batch: np.ndarray, y_pred: np.ndarray) -> float:
+    def compute_loss(self, y_true, y_pred) -> float:
         """
         ...
         """
-        penalty = lasso(self.coefficients)  # l1 norm
-        loss = mse_score(y_batch, y_pred) + self.alpha * penalty
+        penalty = lasso(self.w)  # l1 norm
+        loss = mse_score(y_true, y_pred) + self.alpha * penalty
         return loss
 
-    def gradient_update(self, x_batch: np.ndarray, y_batch: np.ndarray, y_pred: np.ndarray) -> None:
+    def gradient_update(self, x, y_true, y_pred) -> None:
         """
         Compute the LASSO gradient with L1 norm as regularisation.
 
         >>> loss(X, y) = sum((y - xw - b)^2) + alpha * sum(|w|)
         >>> # LASSO partial differentials
-        >>> d/dw loss = -2*x(y - xw - b) + alpha * sign(w)
-        >>> d/db loss =   -2(y - xw - b) 
+        >>> d/dw loss(w, b) = -2*x(y - xw - b) + alpha * sign(w)
+        >>> d/db loss(w, b) =   -2(y - xw - b) 
         """
-        error = y_batch - y_pred  # y - (xw + b)
-        gradient_coefficients = -2 * x_batch.T @ error / x_batch.shape[0] + self.alpha * np.sign(self.coefficients)
-        gradient_intercept = -2 * error.mean()
+        error = y_true - y_pred  # y - (xw + b)
+        m = x.shape[0]
+        gradient_w = -2 * x.T @ error / m + self.alpha * np.sign(self.w)
+        gradient_b = -2 * error.mean()
 
-        self.coefficients -= self.learning_rate * gradient_coefficients
-        self.intercept -= self.learning_rate * gradient_intercept
+        self.w -= self.learning_rate * gradient_w
+        self.b -= self.learning_rate * gradient_b
 
 
 
-class Ridge(LinearModel):
+class LinearRidge(LinearModel):
     def __init__(
             self,
             learning_rate = 0.01,
@@ -123,36 +130,39 @@ class Ridge(LinearModel):
             train_val_split = 0.2,
             verbose = True):
         super().__init__(learning_rate, epochs, batch_size, keep_rest, training_method, patience, train_val_split, verbose)
+        self._activation = linear
         self.lamda = lamda
         self.n_features = None
 
-    def compute_loss(self, y_batch: np.ndarray, y_pred: np.ndarray) -> float:
+    def compute_loss(self, y_true, y_pred) -> float:
         """
         ...
         """
-        penalty = ridge(self.coefficients)  # l2 norm
-        loss = mse_score(y_batch, y_pred) + self.lamda * penalty
+        penalty = ridge(self.w)  # l2 norm
+        loss = mse_score(y_true, y_pred) + self.lamda * penalty
         return loss
 
-    def gradient_update(self, x_batch: np.ndarray, y_batch: np.ndarray, y_pred: np.ndarray) -> None:
+    def gradient_update(self, x, y_true, y_pred) -> None:
         """
         Compute the Ridge gradient with L2 norm as regularisation.
 
         >>> loss(X, y) = sum((y - xw - b)^2) + lamda * sum(w^2)
         >>> # Ridge partial differentials
-        >>> d/dw loss = -2*x(y - xw - b) + 2 * lamda * w
-        >>> d/db loss =   -2(y - xw - b) 
+        >>> d/dw loss(w, b) = -2*x(y - xw - b) + 2 * lamda * w
+        >>> d/db loss(w, b) =   -2(y - xw - b) 
         """
-        error = y_batch - y_pred
-        gradient_coefficients = -2 * x_batch.T @ error / x_batch.shape[0] + 2 * self.lamda * self.coefficients
-        gradient_intercept = -2 * error.mean()
+        error = y_true - y_pred
+        m = x.shape[0]
+        
+        gradient_w = -2 * x.T @ error / m + 2 * self.lamda * self.w
+        gradient_b = -2 * error.mean()
 
-        self.coefficients -= self.learning_rate * gradient_coefficients
-        self.intercept -= self.learning_rate * gradient_intercept
+        self.w -= self.learning_rate * gradient_w
+        self.b -= self.learning_rate * gradient_b
 
 
 
-class ElasticNet(LinearModel):
+class LinearElasticNet(LinearModel):
     def __init__(
             self,
             learning_rate = 0.01,
@@ -166,19 +176,20 @@ class ElasticNet(LinearModel):
             train_val_split = 0.2,
             verbose = True):
         super().__init__(learning_rate, epochs, batch_size, keep_rest, training_method, patience, train_val_split, verbose)
+        self._activation = linear
         self.alpha = alpha
         self.l1_ratio = l1_ratio
         self.n_features = None
 
-    def compute_loss(self, y_batch: np.ndarray, y_pred: np.ndarray) -> float:
+    def compute_loss(self, y_true, y_pred) -> float:
         """
         ...
         """
-        penalty = elastic_net(self.coefficients, self.l1_ratio)  # weighted sum of l1 norm and l2 norm
-        loss = mse_score(y_batch, y_pred) + self.alpha * penalty
+        penalty = elastic_net(self.w, self.l1_ratio)  # weighted sum of l1 norm and l2 norm
+        loss = mse_score(y_true, y_pred) + self.alpha * penalty
         return loss
 
-    def gradient_update(self, x_batch: np.ndarray, y_batch: np.ndarray, y_pred: np.ndarray) -> None:
+    def gradient_update(self, x, y_true, y_pred) -> None:
         """
         Compute the Elastic Net gradient with L1 and L2 norm as regularisation.
 
@@ -189,10 +200,12 @@ class ElasticNet(LinearModel):
         >>> d/dw loss(w, b) = -2*x(y - xw - b) + alpha * d/dw penalty(w)
         >>> d/db loss(w, b) =   -2(y - xw - b)
         """
-        error = y_batch - y_pred
-        grad_penalty = self.l1_ratio * np.sign(self.coefficients) + (1 - self.l1_ratio) * 2 * self.coefficients
-        gradient_coefficients = -x_batch.T @ error / x_batch.shape[0] + self.alpha * grad_penalty
-        gradient_intercept = -error.mean()
+        error = y_true - y_pred
+        m = x.shape[0]
 
-        self.coefficients -= self.learning_rate * gradient_coefficients
-        self.intercept -= self.learning_rate * gradient_intercept
+        gradient_penalty = self.l1_ratio * np.sign(self.w) + (1 - self.l1_ratio) * 2 * self.w
+        gradient_w = -2 * x.T @ error / m + self.alpha * gradient_penalty
+        gradient_b = -2 * error.mean()
+
+        self.w -= self.learning_rate * gradient_w
+        self.b -= self.learning_rate * gradient_b
