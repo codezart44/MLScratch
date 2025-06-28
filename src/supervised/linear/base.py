@@ -4,9 +4,7 @@ from ...utils.math.regularisation import l1_norm, l2_norm
 from abc import ABC, abstractmethod
 
 from ...utils.data import shuffle_data, split_data
-from ...utils.metrics.regression import mse_score
 from ...utils.validation import EarlyStopper
-
 
 # --------------------- DECISION TREE CLASSIFIER CLASSES ---------------------
 # LinearModel       (ABC)
@@ -36,8 +34,9 @@ class LinearModel(ABC):
         self.verbose = verbose
 
         # Attributes
-        self.__coefficients = None  # weights
-        self.__intercept = None  # bias
+        self._activation = None # set to identity or sigmoid
+        self.w = None  # weights, coefficients
+        self.b = None  # bias, intercept
         
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         """
@@ -56,8 +55,8 @@ class LinearModel(ABC):
             Array of input target data. Split into training and validation parts.
         """
         self.n_features = X.shape[1]
-        self.coefficients = np.random.randn(self.n_features)  # normal initialization, could use uniform also...
-        self.intercept = 0
+        self.w = np.random.randn(self.n_features)  # normal initialization, could use uniform also...
+        self.b = 0
         losses = np.zeros((self.epochs, 2))  # train and validation
 
         # train val split
@@ -85,7 +84,7 @@ class LinearModel(ABC):
         
         self.early_stopper.reset()  # reset, should the model be retrained
         return losses
-
+    
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Compute target predictions.
@@ -103,7 +102,7 @@ class LinearModel(ABC):
         ndarray
             Array of target predictions.
         """
-        return X @ self.coefficients + self.intercept
+        return self._activation(X @ self.w + self.b)
     
     def evaluate(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -178,7 +177,7 @@ class LinearModel(ABC):
 
             # exclude rest batch
             if not self.keep_rest and x_batch.shape[0] < self.batch_size:
-                break
+                break  # break for the loop lap the rest_batch is being processed
 
             y_pred = self.predict(x_batch)
 
@@ -192,11 +191,11 @@ class LinearModel(ABC):
         return total_loss / n_batches
 
     @abstractmethod
-    def compute_loss(self, y_batch: np.ndarray, y_pred: np.ndarray) -> float:
+    def compute_loss(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
         pass
 
     @abstractmethod
-    def gradient_update(self, y_batch: np.ndarray, y_pred: np.ndarray, x_batch: np.ndarray) -> None:
+    def gradient_update(self, x: np.ndarray, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         pass
 
     @property
@@ -204,29 +203,23 @@ class LinearModel(ABC):
         """
         ...
         """
-        return self.__coefficients is not None and self.__intercept is not None
+        return self.w is not None and self.b is not None
 
     @property
     def coefficients(self) -> np.ndarray:
         """
-        ...
+        Alias for weights (w). 
         """
-        return self.__coefficients
+        return self.w
 
     @property
     def intercept(self) -> float:
         """
-        ...
+        Alias for bias (b).
         """
-        return self.__intercept
+        return self.b
 
 
-class LogisticModel(ABC):
-    def __init__(
-            self,
-            
-            ):
-        super().__init__()
 
 # --------------------- LINEAR MODEL HELPER FUNCTIONS ---------------------
 
@@ -247,7 +240,6 @@ def lasso(coefficients : np.ndarray) -> float:
         LASSO regularisation pentaly term.
     """
     return l1_norm(coefficients)
-
 
 def ridge(coefficients : np.ndarray) -> float:
     """
