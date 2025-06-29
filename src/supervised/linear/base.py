@@ -1,14 +1,13 @@
 import numpy as np
 from typing import Literal
-from ...utils.math.regularisation import l1_norm, l2_norm
 from abc import ABC, abstractmethod
 
+from ...utils.math.regularisation import l1_norm, l2_norm
 from ...utils.data import shuffle_data, split_data
 from ...utils.validation import EarlyStopper
 
-# --------------------- DECISION TREE CLASSIFIER CLASSES ---------------------
+# --------------------- LINEAR MODEL CLASSES ---------------------
 # LinearModel       (ABC)
-# LogisticModel     (ABC)
 
 class LinearModel(ABC):
     def __init__(

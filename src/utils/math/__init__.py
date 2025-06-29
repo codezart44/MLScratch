@@ -17,5 +17,4 @@ from .split_criteria import (
     mean_squared_error,
     mae_reduction,
     mse_reduction,
-    
     )

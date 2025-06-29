@@ -24,7 +24,6 @@ class LinearRegression(LinearModel):
             train_val_split = 0.2,
             verbose = True):
         super().__init__(learning_rate, epochs, batch_size, keep_rest, training_method, patience, train_val_split, verbose)
-
         self._activation = linear
         self.n_features = None
 
